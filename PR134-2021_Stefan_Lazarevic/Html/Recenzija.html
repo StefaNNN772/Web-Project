@@ -1,0 +1,201 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Recenzije</title>
+    <script src="../Scripts/jquery-3.4.1.js"></script>
+    <script src="../Scripts/bootstrap.min.js"></script>
+    <link href="../Content/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        .page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        .content {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+            .content form {
+                width: 100%;
+                max-width: 350px;
+            }
+
+            .content button {
+                margin-top: 10px;
+                width: 100%;
+                max-width: 350px;
+                background-color: lightblue;
+                border-color: blue;
+                font-weight: bold;
+            }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .page-header h1 {
+                color: blue;
+            }
+
+        .tabelaRecenzija {
+            width: 100%;
+            margin-top: 50px;
+        }
+
+        #porukaNemaRecenzija {
+            margin-top: 50px;
+        }
+    </style>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            prijavljenKorisnik();
+            ucitajRecenzije();
+
+            function prijavljenKorisnik() {
+                var korisnik = sessionStorage.getItem('TrenutniKorisnik');
+                if (korisnik) {
+                    $('#urediProfil').show();
+                }
+            }
+
+            var let = sessionStorage.getItem('let');
+
+            function ucitajRecenzije() {
+                var korisnik = JSON.parse(sessionStorage.getItem('TrenutniKorisnik'));
+                var let = sessionStorage.getItem('let');
+                $.get("/api/recenzijaDodavanje?idLeta=" + let + "&korisnickoIme=" + korisnik.KorisnickoIme)
+                    .done(function (response) {
+                        var tabelaRecenzija = $('#tabelaRecenzija');
+                        tabelaRecenzija.empty();
+                        if (response.length > 0 && response.some(function (recenzija) {
+                            return recenzija.StatusRecenzije === 0 || recenzija.StatusRecenzije === 2 || recenzija.Recezent === korisnik.KorisnickoIme || recenzija.StatusRecenzije === 1;
+                        })) {
+
+                            $.each(response, function (index, recenzija) {
+                                if (recenzija.StatusRecenzije === 0 || recenzija.StatusRecenzije === 2 || recenzija.Recezent === korisnik.KorisnickoIme || recenzija.StatusRecenzije === 1) {
+                                    var row = $('<tr></tr>');
+                                    row.append('<td>' + recenzija.Naslov + '</td>');
+                                    row.append('<td>' + recenzija.Sadrzaj + '</td>');
+                                    if (recenzija.StatusRecenzije == 0) {
+                                        row.append('<td>Kreirana</td>');
+                                    }
+                                    else if (recenzija.StatusRecenzije == 1) {
+                                        row.append('<td>Odobrena</td>');
+                                    }
+                                    else {
+                                        row.append('<td>Odbijena</td>');
+                                    }
+
+                                    tabelaRecenzija.append(row);
+                                }
+                            });
+
+                            $('#tabelaRecenzijaHeader').show();
+                            $('#porukaNemaRecenzija').hide();
+                        }
+                        else {
+                            $('#tabelaRecenzijaHeader').hide();
+                            tabelaRecenzija.empty();
+                            $('porukaNemaRecenzija').show();
+                        }
+                    });
+            }
+
+            $('#btnDodaj').click(function (event) {
+                event.preventDefault();
+                var korisnik = JSON.parse(sessionStorage.getItem('TrenutniKorisnik'));
+                var naslov = $('#naslov').val();
+                var sadrzaj = $('#sadrzaj').val();
+
+                $.post("/api/recenzijaDodavanje",
+                {
+                    IdLeta: let,
+                    Recezent: korisnik.KorisnickoIme,
+                    Naslov: naslov,
+                    Sadrzaj: sadrzaj,
+                    StatusRecenzije: 0
+                })
+                    .done(function (response) {
+                        alert('Recenzija dodata');
+                        
+                        $('#btnDodaj').prop('disabled', true);
+                        
+                        $('#formaZaDodavanje')[0].reset();
+                        
+                        ucitajRecenzije();
+                    })
+                    .fail(function () {
+                        alert('Greška prilikom dodavanja recenzije');
+                    });
+            });
+            $('#btnDodaj').prop('disabled', true);
+            function checkFormCompletion() {
+                var form = $('#formaZaDodavanje')[0];
+                if (form.checkValidity()) {
+                    $('#btnDodaj').prop('disabled', false);
+                } else {
+                    $('#btnDodaj').prop('disabled', true);
+                }
+            }
+
+            $('#formaZaDodavanje input, #formaZaDodavanje select, #formaZaDodavanje textarea').on('input', checkFormCompletion);
+        });</script>
+</head>
+<body>
+    <div class="page-header" style="background-color:darkslategrey">
+        <a class="link-opacity-75-hover" href="../Html/Index.html">
+            <h1 style="padding-left: 10px; ">Rezervacija letova</h1>
+        </a>
+        <div style="padding-right: 10px;">
+            <a style="margin-right: 10px; display: none;" id="urediProfil" class="link-opacity-75-hover" href="../Html/UredjivanjeProfila.html">Uredi svoj profil</a>
+            <a style="margin-right: 10px;" class="link-opacity-75-hover" href="../Html/Registracija.html">Registruj se</a>
+            <a class="link-opacity-75-hover" href="../Html/Prijava.html">Prijavi se</a>
+        </div>
+    </div>
+    <div class="page">
+        <div class="content">
+            <h3>Dodavanje recenzije:</h3>
+            <form id="formaZaDodavanje">
+                <div class="form-group">
+                    <label for="naslov">Naslov:</label>
+                    <input type="text" class="form-control" id="naslov" placeholder="Unesite naslov" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="sadrzaj">Sadrzaj:</label>
+                    <textarea class="form-control" id="sadrzaj" rows="5" placeholder="Unesite sadrzaj" required autocomplete="off"></textarea>
+                </div>
+                <button type="submit" class="btn btn-default" id="btnDodaj">Dodaj recenziju</button>
+            </form>
+
+            <h3 style="margin-top: 50px">Vase recenzije:</h3>
+            <p id="porukaNemaRecenzija">Jos uvijek nema recenzija</p>
+            <table class="table tabelaRecenzija">
+                <thead id="tabelaRecenzijaHeader">
+                    <tr>
+                        <th>Naslov</th>
+                        <th>Sadrzaj</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaRecenzija">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

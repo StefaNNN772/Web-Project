@@ -1,0 +1,70 @@
+[
+  {
+    "KorisnickoIme": "marko",
+    "Lozinka": "marko",
+    "Ime": "Marko",
+    "Prezime": "Markovic",
+    "Email": "marko.markovic@gmail.com",
+    "DatumRodjenja": "2000-05-12T00:00:00",
+    "Pol": "Muski",
+    "TipKorisnika": 0,
+    "Rezervacije": [
+      {
+        "ListaId": [ 1176780656 ],
+        "Id": 1176780656,
+        "Korisnik": "marko",
+        "Let": 2,
+        "BrojPutnika": 3,
+        "Cijena": 2700,
+        "Status": 3
+      },
+      {
+        "ListaId": [ 1176780658 ],
+        "Id": 1176780658,
+        "Korisnik": "marko",
+        "Let": 1,
+        "BrojPutnika": 3,
+        "Cijena": 2700,
+        "Status": 3
+      },
+      {
+        "ListaId": [ 1859353296 ],
+        "Id": 1859353296,
+        "Korisnik": "marko",
+        "Let": 2,
+        "BrojPutnika": 1,
+        "Cijena": 900,
+        "Status": 3
+      },
+      {
+        "ListaId": [ 338533575 ],
+        "Id": 338533575,
+        "Korisnik": "marko",
+        "Let": 1092926873,
+        "BrojPutnika": 5,
+        "Cijena": 4000,
+        "Status": 2
+      },
+      {
+        "ListaId": [ 269113454 ],
+        "Id": 269113454,
+        "Korisnik": "marko",
+        "Let": 1092926873,
+        "BrojPutnika": 7,
+        "Cijena": 5600,
+        "Status": 2
+      }
+    ]
+  },
+  {
+    "KorisnickoIme": "b",
+    "Lozinka": "b",
+    "Ime": "b",
+    "Prezime": "b",
+    "Email": "a@a",
+    "DatumRodjenja": "2024-06-28T00:00:00",
+    "Pol": "Muski",
+    "TipKorisnika": 0,
+    "Rezervacije": []
+  }
+]

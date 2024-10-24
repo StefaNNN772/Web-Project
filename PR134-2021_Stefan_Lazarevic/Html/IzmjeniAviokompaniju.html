@@ -1,0 +1,164 @@
+﻿<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Izmjena aviokompanije</title>
+    <script src="../Scripts/jquery-3.4.1.js"></script>
+    <script src="../Scripts/bootstrap.min.js"></script>
+    <link href="../Content/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        .page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .page-header h1 {
+                color: blue;
+            }
+
+        .content {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+            .content form,
+            .form-group {
+                width: 100%;
+                max-width: 350px;
+            }
+
+            .content div {
+                width: 100%;
+            }
+
+        .custom-hr {
+            border: none;
+            height: 1px;
+            width: 100%;
+            background-color: #b6b6b6;
+            margin: 1rem 0;
+        }
+    </style>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            prijavljenKorisnik();
+            ucitajAviokompaniju();
+
+            function prijavljenKorisnik() {
+                var korisnik = sessionStorage.getItem('TrenutniKorisnik');
+                if (korisnik) {
+                    $('#urediProfil').show();
+                }
+            }
+
+            function ucitajAviokompaniju() {
+                var id = JSON.parse(sessionStorage.getItem('aviokompanijaId'));
+                $.get('/api/IzmijeniAviokompaniju?id=' + id)
+                    .done(function (response) {
+                        $('#formaZaIzmjenu')[0].reset();
+                        $('#aviokompanijaNaziv').val(response.Naziv);
+                        $('#aviokompanijaAdresa').val(response.Adresa);
+                        $('#aviokompanijaKontakt').val(response.Kontakt);
+                    });
+            }
+
+            $('#izmjeniAviokompanijuBtn').click(function (event) {
+                event.preventDefault();
+                var id = JSON.parse(sessionStorage.getItem('aviokompanijaId'));
+                console.log($('#aviokompanijaNaziv').val() + $('#aviokompanijaAdresa').val() + $('#aviokompanijaKontakt').val())
+                $.post("/api/IzmijeniAviokompaniju",
+                    {
+                        Id: id,
+                        Naziv: $('#aviokompanijaNaziv').val(),
+                        Adresa: $('#aviokompanijaAdresa').val(),
+                        Kontakt: $('#aviokompanijaKontakt').val()
+                    })
+                    .done(function (response) {
+                        alert('Uspijesna izmjena');
+                        $('#formaZaIzmjenu')[0].reset();
+                        window.location.href = 'http://localhost:64079/Html/Index.html';
+                    })
+                    .fail(function () {
+                        alert('Greska prilikom izmjene');
+                    });
+            });
+
+            $('#izmjeniAviokompanijuBtn').prop('disabled', true);
+            function checkFormCompletion() {
+                var form = $('#formaZaIzmjenu')[0];
+                if (form.checkValidity()) {
+                    $('#izmjeniAviokompanijuBtn').prop('disabled', false);
+                } else {
+                    $('#izmjeniAviokompanijuBtn').prop('disabled', true);
+                }
+            }
+
+            $('#formaZaIzmjenu input, #formaZaIzmjenu select').on('input', checkFormCompletion);
+        });</script>
+</head>
+<body>
+    <div class="page-header" style="background-color:darkslategrey">
+        <a class="link-opacity-75-hover" href="../Html/Index.html">
+            <h1 style="padding-left: 10px; ">Rezervacija letova</h1>
+        </a>
+        <div style="padding-right: 10px;">
+            <a style="margin-right: 10px; display: none;" id="urediProfil" class="link-opacity-75-hover" href="../Html/UredjivanjeProfila.html">Uredi svoj profil</a>
+            <a style="margin-right: 10px;" class="link-opacity-75-hover" href="../Html/Registracija.html">Registruj se</a>
+            <a class="link-opacity-75-hover" href="../Html/Prijava.html">Prijavi se</a>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="content">
+            <h3 style="margin-bottom: 20px">Izmijeni:</h3>
+            <form id="formaZaIzmjenu">
+                <div class="form-group">
+                    <input class="form-control"
+                           style="margin-bottom: 10px"
+                           id="aviokompanijaNaziv"
+                           type="text"
+                           placeholder="Naziv"
+                           autocomplete="off"
+                           required />
+                </div>
+                <div class="form-group">
+                    <input class="form-control"
+                           style="margin-bottom: 10px"
+                           id="aviokompanijaAdresa"
+                           type="text"
+                           placeholder="Adresa"
+                           autocomplete="off"
+                           required />
+                </div>
+                <div class="form-group">
+                    <input class="form-control"
+                           style="margin-bottom: 10px"
+                           id="aviokompanijaKontakt"
+                           type="text"
+                           placeholder="Kontakt" />
+                </div>
+                <input class="btn btn-default"
+                       style="width: 100%"
+                       type="submit"
+                       value="Izmijeni"
+                       id="izmjeniAviokompanijuBtn" />
+            </form>
+        </div>
+    </div>
+</body>
+</html>

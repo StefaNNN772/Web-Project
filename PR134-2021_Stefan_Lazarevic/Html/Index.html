@@ -1,0 +1,359 @@
+﻿<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" />
+    <script src="../Scripts/jquery-3.4.1.js"></script>
+    <script src="../Scripts/bootstrap.min.js"></script>
+    <link href="../Content/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        .page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        .content {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .content div {
+            width: 100%;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-header h1 {
+            color: blue;
+        }
+
+        .tabelaLetova {
+            width: 100%;
+            margin-top: 20px;
+            overflow: auto
+        }
+
+        .dodatneOpcije {
+            margin-top: 50px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .dodatneOpcije a {
+            font-size: 25px;
+        }
+    </style>
+
+    <script type="text/javascript">
+        $(document).ready(function ()
+        {
+            ucitajLetove();
+            $('#dodatneOpcije').show();
+            $('#prikazAviokompanije').show();
+
+        try
+        {
+            kreiranjeKorisnika();
+        }
+        catch
+        {
+
+        }
+
+        $(".sort").click(function () {
+            var sortBy = $(this).data("sortby");
+            var sortDir = $(this).data("sortdir");
+            sortLetovi(sortBy, sortDir);
+        });
+
+            function ucitajLetove()
+            {
+                $.get("/api/letovi")
+                    .done(function (data)
+                    {
+                    var letovi = data;
+                    if (letovi.length > 0 && letovi.some(function (let) {
+                        return let.Status === 0;
+                    }))
+                    {
+                        var $tableBody = $("#tabelaLetova tbody");
+                        $tableBody.empty();
+
+                        $.each(letovi, function (index, let) {
+                            if (let.Status == 0)
+                            {
+                                var $row = $("<tr>");
+                                $row.append($("<td>").text(let.Id));
+                                var $aviokompanija = $("<a>")
+                                    .text(let.Aviokompanija)
+                                    .attr("href", "AviokompanijaIzabrana.html")
+                                    .click(function () {
+                                        sessionStorage.setItem('aviokompanija', JSON.stringify(let.IdAviokompanije));
+                                    })
+                                $row.append($aviokompanija);
+                                $row.append($("<td>").text(let.Cijena));
+                                $row.append($("<td>").text(let.BrojSlobodnihMjesta));
+                                $row.append($("<td>").text(let.BrojZauzetihMjesta));
+                                $row.append($("<td>").text(let.DatumPolaska.replaceAll('-', '/').replaceAll('T', '-')));
+                                $row.append($("<td>").text(let.DatumDolaska.replaceAll('-', '/').replaceAll('T', '-')));
+                                $row.append($("<td>").text(let.PolaznaDestinacija));
+                                $row.append($("<td>").text(let.OdredisnaDestinacija));
+                                var $recenzije = $("<a>")
+                                    .text("Recenzije")
+                                    .attr("href", "SveRecenzije.html")
+                                    .click(function () {
+                                        sessionStorage.setItem('aviokompanijaId', let.IdAviokompanije);
+                                    })
+                                    $row.append($recenzije);
+                                }
+                                $tableBody.append($row);
+                            });
+                        $("#porukaNemaLetova").hide();
+                        $("#letoviTableHead").show();
+                    }
+                    else
+                    {
+                        $("#letoviTableHead").hide();
+                        $("#tabelaId").empty();
+                        $("#porukaNemaLetova").show();
+                    }
+                });
+            }
+
+            function kreiranjeKorisnika()
+            {
+                var korisnik = JSON.parse(sessionStorage.getItem('TrenutniKorisnik'));
+                if (korisnik) {
+                    $('#urediProfil').show();
+                    $('#dodatneOpcije').show();
+                }
+                if (korisnik.TipKorisnika === 0) {
+                    $('#rezervisi').show();
+                    $('#prikaziRezervacije').show();
+                    $('#prikazAviokompanije').show();
+                }
+                if (korisnik.TipKorisnika === 1) {
+                    $('#prikaziKorisnike').show();
+                    $('#upravljanjeRezervacijama').show();
+                    $('#upravljanjeAviokompanijama').show();
+                    $('#upravljanjeLetovima').show();
+                }
+            }
+
+            //pozivanje pretraga na promjenu
+            $("#pretragaPolazna").keyup(function () {
+                pretragaLetova();
+            });
+
+            $("#pretragaOdredisna").keyup(function () {
+                pretragaLetova();
+            });
+
+            $("#pretragaDatumaPolaska").keyup(function () {
+                pretragaLetova();
+            });
+
+            $("#pretragaDatumaDolaska").keyup(function () {
+                pretragaLetova();
+            });
+
+            function pretragaLetova() {
+                var polazna = $("#pretragaPolazna").val().toLowerCase();
+                var odredisna = $("#pretragaOdredisna").val().toLowerCase();
+                var datumPolaska = $("#pretragaDatumaPolaska").val();
+                var datumDolaska = $("#pretragaDatumaDolaska").val();
+
+                try
+                {
+                    var date1 = new Date(datumPolaska)
+                    var date2 = new Date(datumDolaska)
+                } catch
+                {
+
+                }
+
+                $("#tabelaId tr").filter(function () {
+                    //sesto dijete je datum polaska, sedmo je datum dolaska, osmo je polazna destinacija, deveto je odredisna destinacija
+                    var polaznaDestinacija = $(this).find("td:nth-child(8)").text().toLowerCase();
+                    var odredisnaDestinacija = $(this).find("td:nth-child(9)").text().toLowerCase();
+                    var polazniDatum = $(this).find("td:nth-child(6)").text().split('-')[0].replaceAll('/', '-');
+                    var dolazniDatum = $(this).find("td:nth-child(7)").text().split('-')[0].replaceAll('/', '-');
+
+                    //prebacivanje datuma u format koji je lakse porediti
+                    try
+                    {
+                        var date3 = new Date(polazniDatum)
+                        var date4 = new Date(dolazniDatum)
+                    } catch
+                    {
+
+                    }
+
+                    //poklapanje sa filterom
+                    var polaznaM = polaznaDestinacija.includes(polazna);
+                    var odredisnaM = odredisnaDestinacija.includes(odredisna);
+                    var datumM1;
+                    var datumM2;
+                    var datumM3;
+                    //poredjenje datuma
+                    if (date3 >= date1) {
+                        datumM1 = 1;
+                    }
+                    else if (date3 < date1) {
+                        datumM1 = 0;
+                    }
+                    else {
+                        datumM1 = 1;
+                    }
+                    if (date2 >= date4) {
+                        datumM2 = 1;
+                    }
+                    else if (date2 < date4) {
+                        datumM2 = 0;
+                    }
+                    else {
+                        datumM2 = 1;
+                    }
+                    if (date1 <= date2)
+                    {
+                        datumM3 = 1;
+                    }
+                    else if (date1 > date2)
+                    {
+                        datumM3 = 0;
+                    }
+                    else {
+                        datumM3 = 1;
+                    }
+
+                    var bool = datumM1 && datumM2 && datumM3;
+                    if (bool == 1) {
+                        bool = true;
+                    }
+                    else {
+                        bool = false;
+                    }
+
+                    $(this).toggle(polaznaM && odredisnaM && bool);
+                });
+            }
+
+            function sortLetovi(sortBy, sortDir) {
+                var $tbody = $("#tabelaId");
+                var $rows = $tbody.find("tr").get();
+
+                //callback za sortiranje
+                $rows.sort(function (a, b) {
+                    //uzimamo odgovarajuci td iz redova
+                    var keyA = $(a).find("td:nth-child(" + (sortByIndex(sortBy) + 1) + ")").text().toUpperCase();
+                    var keyB = $(b).find("td:nth-child(" + (sortByIndex(sortBy) + 1) + ")").text().toUpperCase();
+
+                    if (sortDir === "asc") {
+                        //postavlja A ispred B ako je true
+                        return (keyA > keyB) ? 1 : -1;
+                    } else {
+                        return (keyA < keyB) ? 1 : -1;
+                    }
+                });
+
+                //ponovno dodavanje u tabelu
+                $.each($rows, function (index, row) {
+                    $tbody.append(row);
+                });
+            }
+
+            function sortByIndex(sortBy) {
+                switch (sortBy) {
+                    case "cijena":
+                        return 3;
+                    default:
+                        return 0;
+                }
+            }
+        });</script>
+</head>
+
+<body>
+    <div class="page-header" style="background-color:darkslategrey">
+        <a class="link-opacity-75-hover" href="../Html/Index.html">
+            <h1 style="padding-left: 10px; ">Rezervacija letova</h1>
+        </a>
+        <div style="padding-right: 10px;">
+            <a style="margin-right: 10px; display: none;" id="urediProfil" class="link-opacity-75-hover" href="../Html/UredjivanjeProfila.html">Uredi svoj profil</a>
+            <a style="margin-right: 10px;" class="link-opacity-75-hover" href="../Html/Registracija.html">Registruj se</a>
+            <a class="link-opacity-75-hover" href="../Html/Prijava.html">Prijavi se</a>
+        </div>
+    </div>
+    <div class="page">
+        <div class="content">
+            <h3 style="margin-bottom: 20px">Dostupni letovi:</h3>
+            <div class="form-group">
+                <input class="form-control" id="pretragaPolazna" type="text" placeholder="Pretrazite po polaznoj destinaciji:">
+            </div>
+            <div class="form-group">
+                <input class="form-control" id="pretragaOdredisna" type="text" placeholder="Pretrazite po odredisnoj destinaciji:">
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" id="pretragaDatumaPolaska" placeholder="Pretrazite po datumu polaska (YYYY-MM-DD):">
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" id="pretragaDatumaDolaska" placeholder="Pretrazite po datumu dolaska (YYYY-MM-DD):">
+            </div>
+            <div class="tabelaLetova">
+                <p id="porukaNemaLetova">Nema letova u ponudi.</p>
+                <table id="tabelaLetova" class="table">
+                    <thead id="letoviTableHead">
+                        <tr>
+                            <th>Id leta</th>
+                            <th>Aviokompanija</th>
+                            <th>Cijena</th>
+                            <th>Broj slobodnih mjesta</th>
+                            <th>Broj zauzetih mjesta</th>
+                            <th>Datum polaska</th>
+                            <th>Datum dolaska</th>
+                            <th>Polazna destinacija</th>
+                            <th>Odredisna destinacija</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaId">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="container" style="margin-bottom: 20px;">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="text-right">
+                            <button class="btn btn-default sort" data-sortby="cijena" data-sortdir="desc" style="background-color:lightblue; border-color:blue; font-weight:bold; margin-right:50px; margin-left: 100px">Sortiraj po cijeni rastuce</button>
+                            <button class="btn btn-default sort" data-sortby="cijena" data-sortdir="asc" style="background-color:lightblue; border-color:blue; font-weight:bold; margin-right:150px; margin-left: 200px">Sortiraj po cijeni opadajuce</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dodatneOpcije" id="dodatneOpcije" style="display:none;">
+                <h3 style="margin: 0">Opcije:</h3>
+                <a style="margin-right: 10px; display: none;" id="prikazAviokompanije" class="link-opacity-75-hover" href="../Html/Aviokompanija.html">Prikaz aviokompanija</a>
+                <a style="margin-right: 10px; display: none;" id="rezervisi" class="link-opacity-75-hover" href="../Html/Rezervacija.html">Rezervisi let</a>
+                <a style="margin-right: 10px; display: none;" id="prikaziRezervacije" class="link-opacity-75-hover" href="../Html/MojeRezervacije.html">Moje rezervacije</a>
+                <a style="margin-right: 10px; display: none;" id="prikaziKorisnike" class="link-opacity-75-hover" href="../Html/Korisnici.html">Upravljanje korisnicima</a>
+                <a style="margin-right: 10px; display: none;" id="upravljanjeAviokompanijama" class="link-opacity-75-hover" href="../Html/AviokompanijeUpravljanje.html">Upravljanje aviokompanijama</a>
+                <a style="margin-right: 10px; display: none;" id="upravljanjeRezervacijama" class="link-opacity-75-hover" href="../Html/RezervacijaUpravljanje.html">Upravljanje rezervacijama</a>
+                <a style="margin-right: 10px; display: none;" id="upravljanjeLetovima" class="link-opacity-75-hover" href="../Html/UpravljanjeLetovima.html">Upravljanje letovima</a>
+            </div>
+        </div>
+    </div>
+</body>

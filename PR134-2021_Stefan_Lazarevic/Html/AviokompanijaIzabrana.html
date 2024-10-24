@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Aviokompanije</title>
+    <script src="../Scripts/jquery-3.4.1.js"></script>
+    <script src="../Scripts/bootstrap.min.js"></script>
+    <link href="../Content/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        .page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .page-header h1 {
+                color: blue;
+            }
+
+        .content {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+            .content form,
+            .form-group {
+                width: 100%;
+                max-width: 350px;
+            }
+
+            .content div {
+                width: 100%;
+            }
+
+        .tabelaAviokompanija {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .custom-hr {
+            border: none;
+            height: 1px;
+            width: 100%;
+            background-color: #b6b6b6;
+            margin: 1rem 0;
+        }
+    </style>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            try {
+                ucitajAviokompanije();
+                prijavljenKorisnik();
+            } catch { }
+
+            function prijavljenKorisnik() {
+                var korisnik = JSON.parse(sessionStorage.getItem('TrenutniKorisnik'));
+                if (korisnik) {
+                    $('#urediProfil').show();
+                }
+            }
+
+            function ucitajAviokompanije() {
+                var aviokompanija = sessionStorage.getItem('aviokompanija');
+                $.get('/api/aviokompanijaIzabrana?idAviokompanije=' + aviokompanija)
+                    .done(function (data) {
+                        var aviokompanije = data;
+                        if (aviokompanije.length > 0) {
+                            var $tableBody = $('#tabelaAviokompanija tbody');
+                            $tableBody.empty();
+                            $.each(aviokompanije, function (index, aviokompanija) {
+                                var $row = $('<tr>');
+                                $row.append($('<td>').text(aviokompanija.Naziv));
+                                $row.append($('<td>').text(aviokompanija.Id));
+                                $row.append($('<td>').text(aviokompanija.Adresa));
+                                $row.append($('<td>').text(aviokompanija.Kontakt));
+
+                                if (aviokompanija.Obrisana === false) {
+                                    $row.append('<td>Aktivna</td>');
+                                }
+                                else {
+                                    $row.append('<td>Obrisana</td>');
+                                }
+                                var korisnik = JSON.parse(
+                                    sessionStorage.getItem('TrenutniKorisnik')
+                                );
+
+                                var $izmjeni = $("<a>")
+                                    .text("Recenzija")
+                                    .addClass("link-opacity-75-hover")
+                                    .attr("href", "../Html/SveRecenzije.html")
+                                    .click(function () {
+                                        sessionStorage.setItem('aviokompanijaId', JSON.stringify(aviokompanija.Id));
+                                    });
+                                $row.append($("<td>").append($izmjeni));
+
+                                $tableBody.append($row);
+                            });
+                            $('#porukaNemaAviokompanija').hide();
+                            $('#aviokompanijeTableHead').show();
+                        } else {
+                            $('#aviokompanijeTableHead').hide();
+                            $('#tabelaId').empty();
+                            $('#porukaNemaAviokompanija').show();
+                        }
+                    });
+            }
+        });</script>
+</head>
+<body>
+    <div class="page-header" style="background-color:darkslategrey">
+        <a class="link-opacity-75-hover" href="../Html/Index.html">
+            <h1 style="padding-left: 10px; ">Rezervacija letova</h1>
+        </a>
+        <div style="padding-right: 10px;">
+            <a style="margin-right: 10px; display: none;" id="urediProfil" class="link-opacity-75-hover" href="../Html/UredjivanjeProfila.html">Uredi svoj profil</a>
+            <a style="margin-right: 10px;" class="link-opacity-75-hover" href="../Html/Registracija.html">Registruj se</a>
+            <a class="link-opacity-75-hover" href="../Html/Prijava.html">Prijavi se</a>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="content">
+            <h3 style="margin-bottom: 20px">Aviokompanija:</h3>
+
+            <div class="tabelaAviokompanija">
+                <p id="porukaNemaAviokompanija">Nema podataka o izbranoj aviokompaniji</p>
+                <table id="tabelaAviokompanija" class="table">
+                    <thead id="aviokompanijeTableHead">
+                        <tr>
+                            <th>Id</th>
+                            <th>Naziv</th>
+                            <th>Adresa</th>
+                            <th>Kontakt</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaId"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

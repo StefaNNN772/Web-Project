@@ -1,0 +1,273 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Rezervacije</title>
+    <script src="../Scripts/jquery-3.4.1.js"></script>
+    <script src="../Scripts/bootstrap.min.js"></script>
+    <link href="../Content/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        .page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        .content {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .page-header h1 {
+                color: blue;
+            }
+
+        .rezervisi {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .rezervacije {
+            width: 100%;
+        }
+    </style>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            prijavljenKorisnik();
+            prikaziDostupneLetove();
+
+            function prijavljenKorisnik() {
+                var korisnik = sessionStorage.getItem('TrenutniKorisnik');
+                if (korisnik) {
+                    $('#urediProfil').show();
+                    prikaziRezervacije();
+                }
+            }
+
+            function prikaziDostupneLetove() {
+                $.get("/api/letovi")
+                    .done(function (letovi) {
+                        $("#comboboxLetovi").empty();
+                        var $comboBox = $("#comboboxLetovi")
+
+                        var letDostupan = false;
+                        $.each(letovi, function (index, let) {
+                            if (let.Status === 0) {
+                                var $option = $("<option>")
+                                    .val(let.Id)
+                                    .text(let.Id + ': ' + let.PolaznaDestinacija + '-' + let.OdredisnaDestinacija);
+                                $comboBox.append($option);
+                                letDostupan = true;
+                            }
+                        });
+
+                        if (!letDostupan) {
+                            $("#btnRezervisi").prop("disabled", true);
+                        }
+
+                        $("#btnRezervisi").off("click").click(function (event) {
+                            event.preventDefault();
+                            var id = parseInt($comboBox.val());
+                            var trenutniKorisnik = JSON.parse(sessionStorage.getItem("TrenutniKorisnik"));
+                            var korisnickoIme = trenutniKorisnik.KorisnickoIme;
+                            var brojKarti = parseInt($("#brojKarata").val());
+
+                            //saljemo zahtjev
+                            $.post("/api/rezervacija", {
+                                korisnik: korisnickoIme,
+                                let: id,
+                                brojPutnika: brojKarti,
+                                status: "Kreirana"
+                            }).done(function (response) {
+                                sessionStorage.setItem("TrenutniKorisnik", JSON.stringify(response));
+                                alert("Rezervacija uspijesna");
+                                prijavljenKorisnik();
+                                prikaziDostupneLetove();
+                            }).fail(function (error) {
+                                alert("Neuspijesna rezervacija");
+                            });
+                        });
+
+
+                        $(".select").html($comboBox);
+                    });
+            }
+
+            function prikaziRezervacije() {
+                var korisnik = JSON.parse(sessionStorage.getItem('TrenutniKorisnik'));
+                $.get("/api/rezervacija?korisnickoIme=" + korisnik.KorisnickoIme)
+                    .done(function (response) {
+                        $.get("/api/letovi")
+                            .done(function (data) {
+                                var letovi = data;
+                                if (response && response.length > 0) {
+                                    var rezervacije = response;
+
+                                    var $tableBody = $("#rezervacijeTable tbody");
+                                    $tableBody.empty();
+
+                                    $.each(rezervacije, function (index, rezervacija) {
+                                        var $row = $("<tr>");
+                                        $row.append($("<td>").text(rezervacija.Id));
+                                        $row.append($("<td>").text(rezervacija.Let));
+                                        $row.append($("<td>").text(rezervacija.BrojPutnika));
+                                        $row.append($("<td>").text(rezervacija.Cijena));
+                                        if (rezervacija.Status === 0) {
+                                            $row.append($("<td>").text("Kreirana"));
+                                        }
+                                        else if (rezervacija.Status === 1) {
+                                            $row.append($("<td>").text("Odobrena"));
+                                        }
+                                        else if (rezervacija.Status === 2) {
+                                            $row.append($("<td>").text("Otkazana"));
+                                        }
+                                        else {
+                                            $row.append($("<td>").text("Zavrsena"));
+                                        }
+
+                                        if (rezervacija.Status === 0 || rezervacija.Status === 1) {
+
+                                            var trenutnoVrijeme = new Date()
+                                            var $dugme2 = $("<button>")
+                                                .text("Otkazi rezervaciju")
+                                                .addClass("btn btn-default")
+                                                .off("click").click(function () {
+                                                    //provjera za vrijeme polaska zbog otkazivanja
+                                                    $.each(letovi, function (index, let) {
+                                                        if (let.Id == rezervacija.Let) {
+                                                            var let1 = let;
+                                                            var vrijeme = let1.DatumPolaska.replaceAll('/', '-');
+                                                            var vrijemePolaska = new Date(vrijeme)
+
+                                                            var razlikaUMilisekundama = vrijemePolaska - trenutnoVrijeme;
+                                                            var razlikaUSatima = razlikaUMilisekundama / (1000 * 60 * 60);
+                                                            if (razlikaUSatima >= 24) {
+                                                                $.post("/api/rezervacijaUpravljanje",
+                                                                    {
+                                                                        id: rezervacija.Id,
+                                                                        korisnik: rezervacija.Korisnik,
+                                                                        brojPutnika: rezervacija.BrojPutnika,
+                                                                        let: rezervacija.Let,
+                                                                        status: "Otkazana"
+                                                                    })
+                                                                    .done(function (response) {
+                                                                        alert("Otkazana rezervacija");
+                                                                        prikazRezervacija();
+                                                                    })
+                                                                    .fail(function (error) {
+                                                                        alert("Nije uspjelo otkazivanje rezervacije");
+                                                                });
+                                                            }
+                                                            else {
+                                                                alert("Nije uspjelo otkazivanje rezervacije jer je vrijeme do polaska manje od 24h");
+                                                            }
+                                                        }
+                                                    });
+                                                });
+                                            $row.append($("<td>").append($dugme2));
+
+                                        }
+                                        else {
+                                            $row.append($("<td>"));
+                                            $row.append($("<td>"));
+                                        }
+                                        $tableBody.append($row);
+                                    });
+
+                                    $("#porukaNemaRezervacije").hide();
+                                    $("#rezervacijeTableHead").show();
+                                } else {
+                                    $("#rezervacijeTableHead").hide();
+                                    $("#rezervacijeTable tbody").empty();
+                                    $("#porukaNemaRezervacije").show();
+                                }
+                            });
+                    });
+            }
+            $("#pretragaStatusa").keyup(function () {
+                        pretragaRezervacija();
+            });
+
+            function pretragaRezervacija() {
+                var polazna = $("#pretragaStatusa").val().toLowerCase();
+
+                $("#tabelaId tr").filter(function () {
+                    //sesto dijete je datum polaska, sedmo je datum dolaska, osmo je polazna destinacija, deveto je odredisna destinacija
+                    var statusIzbor = $(this).find("td:nth-child(5)").text().toLowerCase();
+
+                    //poklapanje sa filterom
+                    var statusM = statusIzbor.includes(polazna);
+
+                    $(this).toggle(statusM);
+                });
+            }
+        });</script>
+</head>
+<body>
+    <div class="page-header" style="background-color:darkslategrey">
+        <a class="link-opacity-75-hover" href="../Html/Index.html">
+            <h1 style="padding-left: 10px; ">Rezervacija letova</h1>
+        </a>
+        <div style="padding-right: 10px;">
+            <a style="margin-right: 10px; display: none;" id="urediProfil" class="link-opacity-75-hover" href="../Html/UredjivanjeProfila.html">Uredi svoj profil</a>
+            <a style="margin-right: 10px;" class="link-opacity-75-hover" href="../Html/Registracija.html">Registruj se</a>
+            <a class="link-opacity-75-hover" href="../Html/Prijava.html">Prijavi se</a>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="content">
+            <div class="rezervisi">
+                <label for="brojKarata" style="margin:0;">Izaberite broj karata:</label>
+                <input type="number" id="brojKarata" min="1" value="1" required />
+                <div class="select">
+                    <select id="comboboxLetovi" class="form-control"></select>
+                </div>
+                <button id="btnRezervisi" class="btn btn-default">Rezervisi let</button>
+            </div>
+
+            <h3 style="margin-top: 40px;">Rezervacije:</h3>
+
+            <div class="form-group">
+                <input class="form-control" id="pretragaStatusa" type="text" placeholder="Pretrazite po statusu">
+            </div>
+
+            <div class="rezervacije">
+                <p style="margin-top:20px;" id="porukaNemaRezervacije">Nema rezervacija</p>
+                <table id="rezervacijeTable" class="table table-striped">
+                    <thead id="rezervacijeTableHead" style="display: none;">
+                        <tr>
+                            <th>Id rezervacije</th>
+                            <th>Id leta</th>
+                            <th>Broj putnika</th>
+                            <th>Cijena</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaId">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

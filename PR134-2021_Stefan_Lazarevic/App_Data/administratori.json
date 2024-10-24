@@ -1,0 +1,13 @@
+[
+  {
+    "KorisnickoIme": "stefan",
+    "Lozinka": "stefan",
+    "Ime": "Stefan",
+    "Prezime": "Lazarevic",
+    "Pol": "Muski",
+    "Email": "a@a.com",
+    "DatumRodjenja": "2002-03-21T16:45:00",
+    "TipKorisnika": "Administrator",
+    "Rezervacije": []
+  }
+]

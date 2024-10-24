@@ -1,0 +1,151 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Registracija</title>
+    <script src="../Scripts/jquery-3.4.1.js"></script>
+    <script src="../Scripts/bootstrap.min.js"></script>
+    <link href="../Content/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        .page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        .content {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+            .content form {
+                width: 100%;
+                max-width: 350px;
+            }
+
+            .content button {
+                margin-top: 10px;
+                width: 100%;
+                max-width: 350px;
+                background-color: lightblue;
+                border-color: blue;
+                font-weight: bold;
+            }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .page-header h1 {
+                color: blue;
+            }
+    </style>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            prijavljenKorisnik();
+
+            function prijavljenKorisnik() {
+                var korisnik = JSON.parse(sessionStorage.getItem('TrenutniKorisnik'));
+                if (korisnik) {
+                    $('#urediProfil').show();
+                }
+            }
+
+            $('#btnRegistracija').click(function (event) {
+                event.preventDefault();
+
+                var formData = $('#formaZaRegistraciju').serialize();
+                $.post("/api/korisnici/nije", formData)
+                    .done(function (response) {
+                        alert('Uspijesna registracija');
+
+                        sessionStorage.setItem("TrenutniKorisnik", JSON.stringify(response));
+
+                        $('#btnRegistracija').prop('disabled', true);
+
+                        $('#formaZaRegistraciju')[0].reset();
+
+                        window.location.href = 'http://localhost:64079/Html/Index.html';
+                    })
+                    .fail(function () {
+                        alert('Korisnik sa tim email-om ili korisnickim imenom vec postoji!');
+                    });
+            });
+
+            $('#btnRegistracija').prop('disabled', true);
+            function checkFormCompletion() {
+                var form = $('#formaZaRegistraciju')[0];
+                if (form.checkValidity()) {
+                    $('#btnRegistracija').prop('disabled', false);
+                } else {
+                    $('#btnRegistracija').prop('disabled', true);
+                }
+            }
+            $('#formaZaRegistraciju input, #formaZaRegistraciju select').on('input', checkFormCompletion);
+            $('#formaZaRegistraciju input[type="date"]').on('change', checkFormCompletion);
+        });</script>
+</head>
+<body>
+    <div class="page-header" style="background-color:darkslategrey">
+        <a class="link-opacity-75-hover" href="../Html/Index.html">
+            <h1 style="padding-left: 10px; ">Rezervacija letova</h1>
+        </a>
+        <div style="padding-right: 10px;">
+            <a style="margin-right: 10px; display: none;" id="urediProfil" class="link-opacity-75-hover" href="../Html/UredjivanjeProfila.html">Uredi svoj profil</a>
+            <a style="margin-right: 10px;" class="link-opacity-75-hover" href="../Html/Registracija.html">Registruj se</a>
+            <a class="link-opacity-75-hover" href="../Html/Prijava.html">Prijavi se</a>
+        </div>
+    </div>
+    <div class="page">
+        <div class="content">
+            <h3>Registruj se:</h3>
+            <form id="formaZaRegistraciju">
+                <div class="form-group">
+                    <label for="Ime">Ime:</label>
+                    <input type="text" class="form-control" id="Ime" name="Ime" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="Prezime">Prezime:</label>
+                    <input type="text" class="form-control" id="Prezime" name="Prezime" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="KorisnickoIme">Korisnicko ime:</label>
+                    <input type="text" class="form-control" id="KorisnickoIme" name="KorisnickoIme" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="Pol">Pol:</label>
+                    <select class="form-control" id="Pol" name="Pol" required autocomplete="off">
+                        <option value="Muski">Muski</option>
+                        <option value="Zenski">Zenski</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="Email">Email:</label>
+                    <input type="email" class="form-control" id="Email" name="Email" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="Lozinka">Lozinka:</label>
+                    <input type="password" class="form-control" id="Lozinka" name="Lozinka" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="DatumRodjenja">Datum rodjenja:</label>
+                    <input type="date" class="form-control" id="DatumRodjenja" name="DatumRodjenja" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn btn-default" id="btnRegistracija">Registracija</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
